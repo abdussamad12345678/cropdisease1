@@ -16,19 +16,15 @@ DATA_FILE = "data.csv"
 MODEL_FILE = "model.pkl"
 
 # -------------------------------
-# STYLING
+# STYLE
 # -------------------------------
 st.markdown("""
 <style>
-.main {
-    background-color: #f5f7fa;
-}
+.main { background-color: #f5f7fa; }
 .stButton>button {
     background-color: #4CAF50;
     color: white;
     border-radius: 10px;
-    height: 45px;
-    width: 100%;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -39,12 +35,11 @@ st.markdown("""
 st.title("🌾 PragyanAI Crop Intelligence Dashboard")
 
 # -------------------------------
-# MODEL FUNCTIONS
+# MODEL
 # -------------------------------
 @st.cache_resource
 def train_model():
     data = pd.read_csv(DATA_FILE)
-
     X = data[["temperature", "humidity", "rainfall"]]
     y = data["disease"]
 
@@ -56,15 +51,11 @@ def train_model():
 
     return model
 
-
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_FILE):
         return train_model()
-
-    with open(MODEL_FILE, "rb") as f:
-        return pickle.load(f)
-
+    return pickle.load(open(MODEL_FILE, "rb"))
 
 model = load_model()
 
@@ -87,8 +78,7 @@ def get_weather(city):
             "humidity": data["main"]["humidity"],
             "rainfall": data.get("rain", {}).get("1h", 0)
         }
-
-    except Exception:
+    except:
         return None
 
 # -------------------------------
@@ -100,21 +90,37 @@ city = st.sidebar.text_input("📍 Location", "Delhi")
 crop = st.sidebar.selectbox("🌾 Crop", ["Rice", "Wheat", "Corn"])
 stage = st.sidebar.selectbox("🌱 Growth Stage", ["Seedling", "Vegetative", "Flowering", "Harvest"])
 
-analyze = st.sidebar.button("🚀 Analyze Risk")
-
 # -------------------------------
-# MAIN
+# TABS
 # -------------------------------
-if analyze:
-    weather = get_weather(city)
+tab1, tab2, tab3 = st.tabs(["🌤 Prediction", "📊 Analytics", "📸 Leaf AI"])
 
-    if not weather:
-        st.error("❌ Unable to fetch weather data")
-        st.stop()
+# ===============================
+# 🌤 PREDICTION TAB
+# ===============================
+with tab1:
 
-    temp = weather["temp"]
-    humidity = weather["humidity"]
-    rainfall = weather["rainfall"]
+    st.subheader("🌤 Weather & Risk Prediction")
+
+    mode = st.radio("Select Mode", ["Auto (Live Weather)", "Manual Simulation"])
+
+    if mode == "Auto (Live Weather)":
+        weather = get_weather(city)
+
+        if not weather:
+            st.error("❌ Unable to fetch weather data")
+            st.stop()
+
+        temp = weather["temp"]
+        humidity = weather["humidity"]
+        rainfall = weather["rainfall"]
+
+    else:
+        st.info("🎛 Adjust values manually")
+
+        temp = st.slider("🌡 Temperature (°C)", 0, 50, 25)
+        humidity = st.slider("💧 Humidity (%)", 0, 100, 60)
+        rainfall = st.slider("🌧 Rainfall (mm)", 0, 200, 20)
 
     col1, col2, col3 = st.columns(3)
 
@@ -122,77 +128,104 @@ if analyze:
     col2.metric("💧 Humidity", f"{humidity}%")
     col3.metric("🌧 Rainfall", f"{rainfall} mm")
 
-    # -------------------------------
     # DFI
-    # -------------------------------
     dfi = (humidity * 0.5) + (rainfall * 0.3) + (temp * 0.2)
 
     st.subheader("🧠 Disease Favorability Index")
     st.progress(min(int(dfi), 100))
 
-    # -------------------------------
-    # PREDICTION
-    # -------------------------------
+    # Prediction
     prob = model.predict_proba([[temp, humidity, rainfall]])[0][1]
 
     st.subheader("⚠ Disease Risk Score")
     st.progress(int(prob * 100))
 
-    # -------------------------------
-    # RISK LEVEL
-    # -------------------------------
     if prob < 0.3:
         st.success("🟢 Low Risk")
     elif prob < 0.7:
         st.warning("🟡 Medium Risk")
     else:
         st.error("🔴 High Risk")
-        st.info("💊 Apply preventive measures within 2–3 days")
+        st.info("💊 Apply preventive measures")
 
-    # -------------------------------
-    # WHAT-IF ANALYSIS
-    # -------------------------------
-    st.subheader("🔮 What-if Analysis")
+    # Simulation Graph
+    st.subheader("📈 Risk Simulation")
 
-    future_rain = rainfall + 10
-    new_prob = model.predict_proba([[temp, humidity, future_rain]])[0][1]
+    sim_rain = np.linspace(0, rainfall + 50, 20)
+    sim_prob = [
+        model.predict_proba([[temp, humidity, r]])[0][1]
+        for r in sim_rain
+    ]
 
-    st.write(f"If rainfall increases by 10mm → Risk = {round(new_prob, 2)}")
+    sim_df = pd.DataFrame({
+        "Rainfall": sim_rain,
+        "Risk": sim_prob
+    })
 
-# -------------------------------
-# IMAGE ANALYSIS
-# -------------------------------
-st.subheader("📸 Leaf Disease Detection")
+    st.line_chart(sim_df.set_index("Rainfall"))
 
-file = st.file_uploader("Upload Leaf Image", type=["jpg", "png", "jpeg"])
+# ===============================
+# 📊 ANALYTICS TAB
+# ===============================
+with tab2:
 
-if file:
-    img = Image.open(file)
-    st.image(img, width=300)
+    st.subheader("📊 Dataset Insights")
 
-    img_array = np.array(img)
-    avg_pixel = img_array.mean()
+    try:
+        data = pd.read_csv(DATA_FILE)
 
-    if avg_pixel < 100:
-        st.error("⚠ Disease Detected")
-    else:
-        st.success("✅ Healthy Leaf")
+        st.write("### Preview")
+        st.dataframe(data.head())
 
-# -------------------------------
-# ANALYTICS
-# -------------------------------
-st.subheader("📊 Analytics Dashboard")
+        st.write("### Feature Trends")
+        st.line_chart(data[["temperature", "humidity", "rainfall"]])
 
-try:
-    data = pd.read_csv(DATA_FILE)
+        st.write("### Disease Distribution")
+        st.bar_chart(data["disease"].value_counts())
 
-    c1, c2 = st.columns(2)
+        st.write("### 🔍 Filter Data")
 
-    c1.line_chart(data[["temperature", "humidity", "rainfall"]])
-    c2.bar_chart(data["disease"].value_counts())
+        temp_range = st.slider("Temperature Range", 0, 50, (10, 40))
 
-except Exception:
-    st.warning("⚠ Dataset not found or invalid")
+        filtered = data[
+            (data["temperature"] >= temp_range[0]) &
+            (data["temperature"] <= temp_range[1])
+        ]
+
+        st.write(f"Filtered Rows: {len(filtered)}")
+        st.dataframe(filtered)
+
+    except:
+        st.warning("⚠ Dataset not found")
+
+# ===============================
+# 📸 LEAF AI TAB
+# ===============================
+with tab3:
+
+    st.subheader("📸 Leaf Disease Detection")
+
+    file = st.file_uploader("Upload Leaf Image", type=["jpg", "png", "jpeg"])
+
+    if file:
+        img = Image.open(file)
+
+        col1, col2 = st.columns(2)
+
+        col1.image(img, caption="Uploaded Image")
+
+        img_array = np.array(img)
+        avg_pixel = img_array.mean()
+
+        with col2:
+            st.write("### Analysis Result")
+
+            if avg_pixel < 100:
+                st.error("⚠ Disease Detected")
+            else:
+                st.success("✅ Healthy Leaf")
+
+            st.write(f"Pixel Score: {round(avg_pixel,2)}")
 
 # -------------------------------
 # FOOTER
