@@ -25,6 +25,3 @@ def load_model():
 
     with open(MODEL_FILE, "rb") as f:
         return pickle.load(f)
-
-def predict_risk(model, temp, humidity, rainfall):
-    return model.predict_proba([[temp, humidity, rainfall]])[0][1]
