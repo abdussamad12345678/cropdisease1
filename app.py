@@ -23,7 +23,6 @@ if "logged_in" not in st.session_state:
 # -------------------------------
 if not st.session_state.logged_in:
 
-    # 🎨 Yellow Theme
     st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] {
@@ -51,7 +50,7 @@ if not st.session_state.logged_in:
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
 
-        if st.button("Login", key="login_btn"):
+        if st.button("Login"):
             success, msg = login(username, password)
             if success:
                 st.session_state.logged_in = True
@@ -62,18 +61,18 @@ if not st.session_state.logged_in:
 
     # -------- REGISTER --------
     with tab2:
-        new_user = st.text_input("Create Username", key="reg_user")
-        new_pass = st.text_input("Create Password", type="password", key="reg_pass")
+        new_user = st.text_input("Create Username")
+        new_pass = st.text_input("Create Password", type="password")
 
         question = st.selectbox("Security Question", [
             "Your pet name?",
             "Your school name?",
             "Your favorite color?"
-        ], key="reg_question")
+        ])
 
-        answer = st.text_input("Answer", key="reg_answer")
+        answer = st.text_input("Answer")
 
-        if st.button("Register", key="register_btn"):
+        if st.button("Register"):
             success, msg = register(new_user, new_pass, question, answer)
             if success:
                 st.success("✅ Registered! Now login.")
@@ -82,9 +81,9 @@ if not st.session_state.logged_in:
 
     # -------- FORGOT PASSWORD --------
     with tab3:
-        f_user = st.text_input("Enter Username", key="forgot_user")
+        f_user = st.text_input("Enter Username")
 
-        if st.button("Get Question", key="get_q_btn"):
+        if st.button("Get Question"):
             q = get_security_question(f_user)
 
             if q:
@@ -96,10 +95,10 @@ if not st.session_state.logged_in:
         if "question" in st.session_state:
             st.info(st.session_state.question)
 
-            ans = st.text_input("Answer", key="forgot_answer")
-            new_pass = st.text_input("New Password", type="password", key="forgot_new_pass")
+            ans = st.text_input("Answer")
+            new_pass = st.text_input("New Password", type="password")
 
-            if st.button("Reset Password", key="reset_btn"):
+            if st.button("Reset Password"):
                 success, msg = reset_password(
                     st.session_state.reset_user,
                     ans,
@@ -115,7 +114,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -------------------------------
-# DASHBOARD (NORMAL)
+# MAIN DASHBOARD
 # -------------------------------
 st.markdown("""
 <style>
@@ -129,7 +128,7 @@ st.markdown("""
 # LOGOUT
 # -------------------------------
 st.sidebar.title("🔐 Account")
-if st.sidebar.button("🚪 Logout", key="logout_btn"):
+if st.sidebar.button("🚪 Logout"):
     st.session_state.logged_in = False
     st.rerun()
 
@@ -144,30 +143,35 @@ model = load_model()
 # SIDEBAR
 # -------------------------------
 st.sidebar.title("📊 Control Panel")
-city = st.sidebar.text_input("📍 Location", "Delhi", key="city")
-crop = st.sidebar.selectbox("🌾 Crop", ["Rice", "Wheat", "Corn"], key="crop")
-stage = st.sidebar.selectbox("🌱 Growth Stage", ["Seedling", "Vegetative", "Flowering", "Harvest"], key="stage")
+
+city = st.sidebar.text_input("📍 Location", "Delhi")
+crop = st.sidebar.selectbox("🌾 Crop", ["Rice", "Wheat", "Corn"])
+stage = st.sidebar.selectbox("🌱 Growth Stage", ["Seedling", "Vegetative", "Flowering", "Harvest"])
 
 col1, col2, col3 = st.columns(3)
 
 # -------------------------------
-# ANALYZE
+# ANALYZE (REAL WEATHER API)
 # -------------------------------
-if st.sidebar.button("🚀 Analyze Risk", key="analyze_btn"):
+if st.sidebar.button("🚀 Analyze Risk"):
 
     try:
         temp, humidity, rainfall = get_weather(city)
+
     except Exception as e:
-        st.error(str(e))
+        st.error(f"Weather API Error: {str(e)}")
         st.stop()
 
-    col1.metric("🌡 Temperature", f"{temp} °C")
+    # Show live values
+    col1.metric("🌡 Temperature", f"{temp:.1f} °C")
     col2.metric("💧 Humidity", f"{humidity}%")
     col3.metric("🌧 Rainfall", f"{rainfall} mm")
 
+    # Disease Index
     dfi = (humidity * 0.5) + (rainfall * 0.3) + (temp * 0.2)
     st.progress(min(int(dfi), 100))
 
+    # Model Prediction
     prob = model.predict_proba([[temp, humidity, rainfall]])[0][1]
     st.progress(int(prob * 100))
 
@@ -179,11 +183,11 @@ if st.sidebar.button("🚀 Analyze Risk", key="analyze_btn"):
         st.error("🔴 High Risk")
 
 # -------------------------------
-# IMAGE
+# IMAGE SECTION
 # -------------------------------
 st.markdown("### 📸 Leaf Disease Detection")
 
-file = st.file_uploader("Upload Leaf Image", key="file_upload")
+file = st.file_uploader("Upload Leaf Image")
 
 if file:
     img = Image.open(file)
@@ -196,7 +200,7 @@ if file:
         st.success("Healthy Leaf")
 
 # -------------------------------
-# DASHBOARD
+# ANALYTICS DASHBOARD
 # -------------------------------
 st.markdown("### 📊 Analytics Dashboard")
 
