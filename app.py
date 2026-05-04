@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from PIL import Image
 
-from auth import register, login
+from auth import register, login, get_security_question, reset_password
 from model import load_model
 from utils import get_weather
 
@@ -19,27 +19,18 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 # -------------------------------
-# LOGIN / REGISTER SCREEN
+# LOGIN / REGISTER / FORGOT
 # -------------------------------
 if not st.session_state.logged_in:
 
-    # 🎨 Blinkit Theme ONLY for login page
+    # 🎨 Blinkit Theme
     st.markdown("""
     <style>
-
     [data-testid="stAppViewContainer"] {
         background-color: #F4C542;
     }
-
-    h1, h2, h3, label {
-        color: #1C1C1C;
-    }
-
-    input {
-        background-color: white !important;
-        border-radius: 8px !important;
-    }
-
+    h1, h2, h3, label { color: #1C1C1C; }
+    input { background-color: white !important; border-radius: 8px !important; }
     .stButton > button {
         background-color: #0E7C1F;
         color: white;
@@ -48,18 +39,12 @@ if not st.session_state.logged_in:
         width: 100%;
         font-weight: bold;
     }
-
-    button[data-baseweb="tab"] {
-        color: #1C1C1C;
-        font-weight: bold;
-    }
-
     </style>
     """, unsafe_allow_html=True)
 
     st.title("🌾 PragyanAI Login Portal")
 
-    tab1, tab2 = st.tabs(["🔐 Login", "📝 Register"])
+    tab1, tab2, tab3 = st.tabs(["🔐 Login", "📝 Register", "🔁 Forgot Password"])
 
     # -------- LOGIN --------
     with tab1:
@@ -81,21 +66,59 @@ if not st.session_state.logged_in:
         new_user = st.text_input("Create Username", key="reg_user")
         new_pass = st.text_input("Create Password", type="password", key="reg_pass")
 
+        question = st.selectbox("Security Question", [
+            "Your pet name?",
+            "Your school name?",
+            "Your favorite color?"
+        ])
+
+        answer = st.text_input("Answer")
+
         if st.button("Register"):
-            success, msg = register(new_user, new_pass)
+            success, msg = register(new_user, new_pass, question, answer)
 
             if success:
-                st.success("✅ Registration successful! Go to Login tab.")
+                st.success("✅ Registered! Now login.")
             else:
                 st.error(msg)
+
+    # -------- FORGOT PASSWORD --------
+    with tab3:
+        f_user = st.text_input("Enter Username")
+
+        if st.button("Get Question"):
+            q = get_security_question(f_user)
+
+            if q:
+                st.session_state.reset_user = f_user
+                st.session_state.question = q
+            else:
+                st.error("User not found")
+
+        if "question" in st.session_state:
+            st.info(st.session_state.question)
+
+            ans = st.text_input("Answer")
+            new_pass = st.text_input("New Password", type="password")
+
+            if st.button("Reset Password"):
+                success, msg = reset_password(
+                    st.session_state.reset_user,
+                    ans,
+                    new_pass
+                )
+
+                if success:
+                    st.success(msg)
+                    del st.session_state.question
+                else:
+                    st.error(msg)
 
     st.stop()
 
 # -------------------------------
-# NORMAL DASHBOARD (NO YELLOW THEME)
+# NORMAL DASHBOARD
 # -------------------------------
-
-# Reset background to default after login
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
@@ -117,9 +140,6 @@ if st.sidebar.button("🚪 Logout"):
 # -------------------------------
 st.markdown("## 🌾 PragyanAI Crop Intelligence Dashboard")
 
-# -------------------------------
-# LOAD MODEL
-# -------------------------------
 model = load_model()
 
 # -------------------------------
@@ -133,7 +153,7 @@ stage = st.sidebar.selectbox("🌱 Growth Stage", ["Seedling", "Vegetative", "Fl
 col1, col2, col3 = st.columns(3)
 
 # -------------------------------
-# ANALYZE BUTTON
+# ANALYZE
 # -------------------------------
 if st.sidebar.button("🚀 Analyze Risk"):
 
@@ -148,13 +168,9 @@ if st.sidebar.button("🚀 Analyze Risk"):
     col3.metric("🌧 Rainfall", f"{rainfall} mm")
 
     dfi = (humidity * 0.5) + (rainfall * 0.3) + (temp * 0.2)
-
-    st.markdown("### 🧠 Disease Favorability Index")
     st.progress(min(int(dfi), 100))
 
     prob = model.predict_proba([[temp, humidity, rainfall]])[0][1]
-
-    st.markdown("### ⚠ Disease Risk Score")
     st.progress(int(prob * 100))
 
     if prob < 0.3:
@@ -163,10 +179,9 @@ if st.sidebar.button("🚀 Analyze Risk"):
         st.warning("🟡 Medium Risk")
     else:
         st.error("🔴 High Risk")
-        st.info("💊 Apply preventive spray in 2–3 days")
 
 # -------------------------------
-# IMAGE SECTION
+# IMAGE
 # -------------------------------
 st.markdown("### 📸 Leaf Disease Detection")
 
@@ -177,7 +192,6 @@ if file:
     st.image(img, width=300)
 
     avg = np.array(img).mean()
-
     if avg < 100:
         st.error("Disease Detected")
     else:
@@ -194,8 +208,5 @@ c1, c2 = st.columns(2)
 c1.line_chart(data[["temperature", "humidity", "rainfall"]])
 c2.bar_chart(data["disease"].value_counts())
 
-# -------------------------------
-# FOOTER
-# -------------------------------
 st.markdown("---")
 st.markdown("🚀 AI predicts crop disease before it happens")
