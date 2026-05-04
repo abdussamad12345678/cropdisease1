@@ -23,7 +23,7 @@ if "logged_in" not in st.session_state:
 # -------------------------------
 if not st.session_state.logged_in:
 
-    # 🎨 Blinkit Theme
+    # 🎨 Yellow Theme
     st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] {
@@ -51,9 +51,8 @@ if not st.session_state.logged_in:
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
 
-        if st.button("Login"):
+        if st.button("Login", key="login_btn"):
             success, msg = login(username, password)
-
             if success:
                 st.session_state.logged_in = True
                 st.success(msg)
@@ -70,13 +69,12 @@ if not st.session_state.logged_in:
             "Your pet name?",
             "Your school name?",
             "Your favorite color?"
-        ])
+        ], key="reg_question")
 
-        answer = st.text_input("Answer")
+        answer = st.text_input("Answer", key="reg_answer")
 
-        if st.button("Register"):
+        if st.button("Register", key="register_btn"):
             success, msg = register(new_user, new_pass, question, answer)
-
             if success:
                 st.success("✅ Registered! Now login.")
             else:
@@ -84,9 +82,9 @@ if not st.session_state.logged_in:
 
     # -------- FORGOT PASSWORD --------
     with tab3:
-        f_user = st.text_input("Enter Username")
+        f_user = st.text_input("Enter Username", key="forgot_user")
 
-        if st.button("Get Question"):
+        if st.button("Get Question", key="get_q_btn"):
             q = get_security_question(f_user)
 
             if q:
@@ -98,10 +96,10 @@ if not st.session_state.logged_in:
         if "question" in st.session_state:
             st.info(st.session_state.question)
 
-            ans = st.text_input("Answer")
-            new_pass = st.text_input("New Password", type="password")
+            ans = st.text_input("Answer", key="forgot_answer")
+            new_pass = st.text_input("New Password", type="password", key="forgot_new_pass")
 
-            if st.button("Reset Password"):
+            if st.button("Reset Password", key="reset_btn"):
                 success, msg = reset_password(
                     st.session_state.reset_user,
                     ans,
@@ -117,7 +115,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -------------------------------
-# NORMAL DASHBOARD
+# DASHBOARD (NORMAL)
 # -------------------------------
 st.markdown("""
 <style>
@@ -131,7 +129,7 @@ st.markdown("""
 # LOGOUT
 # -------------------------------
 st.sidebar.title("🔐 Account")
-if st.sidebar.button("🚪 Logout"):
+if st.sidebar.button("🚪 Logout", key="logout_btn"):
     st.session_state.logged_in = False
     st.rerun()
 
@@ -146,16 +144,16 @@ model = load_model()
 # SIDEBAR
 # -------------------------------
 st.sidebar.title("📊 Control Panel")
-city = st.sidebar.text_input("📍 Location", "Delhi")
-crop = st.sidebar.selectbox("🌾 Crop", ["Rice", "Wheat", "Corn"])
-stage = st.sidebar.selectbox("🌱 Growth Stage", ["Seedling", "Vegetative", "Flowering", "Harvest"])
+city = st.sidebar.text_input("📍 Location", "Delhi", key="city")
+crop = st.sidebar.selectbox("🌾 Crop", ["Rice", "Wheat", "Corn"], key="crop")
+stage = st.sidebar.selectbox("🌱 Growth Stage", ["Seedling", "Vegetative", "Flowering", "Harvest"], key="stage")
 
 col1, col2, col3 = st.columns(3)
 
 # -------------------------------
 # ANALYZE
 # -------------------------------
-if st.sidebar.button("🚀 Analyze Risk"):
+if st.sidebar.button("🚀 Analyze Risk", key="analyze_btn"):
 
     try:
         temp, humidity, rainfall = get_weather(city)
@@ -185,7 +183,7 @@ if st.sidebar.button("🚀 Analyze Risk"):
 # -------------------------------
 st.markdown("### 📸 Leaf Disease Detection")
 
-file = st.file_uploader("Upload Leaf Image")
+file = st.file_uploader("Upload Leaf Image", key="file_upload")
 
 if file:
     img = Image.open(file)
