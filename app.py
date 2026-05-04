@@ -23,11 +23,45 @@ if "logged_in" not in st.session_state:
 # -------------------------------
 if not st.session_state.logged_in:
 
+    # 🎨 Blinkit Theme ONLY for login page
+    st.markdown("""
+    <style>
+
+    [data-testid="stAppViewContainer"] {
+        background-color: #F4C542;
+    }
+
+    h1, h2, h3, label {
+        color: #1C1C1C;
+    }
+
+    input {
+        background-color: white !important;
+        border-radius: 8px !important;
+    }
+
+    .stButton > button {
+        background-color: #0E7C1F;
+        color: white;
+        border-radius: 10px;
+        height: 45px;
+        width: 100%;
+        font-weight: bold;
+    }
+
+    button[data-baseweb="tab"] {
+        color: #1C1C1C;
+        font-weight: bold;
+    }
+
+    </style>
+    """, unsafe_allow_html=True)
+
     st.title("🌾 PragyanAI Login Portal")
 
     tab1, tab2 = st.tabs(["🔐 Login", "📝 Register"])
 
-    # -------- LOGIN TAB --------
+    # -------- LOGIN --------
     with tab1:
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
@@ -42,7 +76,7 @@ if not st.session_state.logged_in:
             else:
                 st.error(msg)
 
-    # -------- REGISTER TAB --------
+    # -------- REGISTER --------
     with tab2:
         new_user = st.text_input("Create Username", key="reg_user")
         new_pass = st.text_input("Create Password", type="password", key="reg_pass")
@@ -58,7 +92,20 @@ if not st.session_state.logged_in:
     st.stop()
 
 # -------------------------------
-# LOGOUT BUTTON
+# NORMAL DASHBOARD (NO YELLOW THEME)
+# -------------------------------
+
+# Reset background to default after login
+st.markdown("""
+<style>
+[data-testid="stAppViewContainer"] {
+    background-color: #f5f7fa;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# -------------------------------
+# LOGOUT
 # -------------------------------
 st.sidebar.title("🔐 Account")
 if st.sidebar.button("🚪 Logout"):
@@ -76,7 +123,7 @@ st.markdown("## 🌾 PragyanAI Crop Intelligence Dashboard")
 model = load_model()
 
 # -------------------------------
-# SIDEBAR CONTROLS
+# SIDEBAR
 # -------------------------------
 st.sidebar.title("📊 Control Panel")
 city = st.sidebar.text_input("📍 Location", "Delhi")
@@ -100,13 +147,11 @@ if st.sidebar.button("🚀 Analyze Risk"):
     col2.metric("💧 Humidity", f"{humidity}%")
     col3.metric("🌧 Rainfall", f"{rainfall} mm")
 
-    # Disease Favorability Index
     dfi = (humidity * 0.5) + (rainfall * 0.3) + (temp * 0.2)
 
     st.markdown("### 🧠 Disease Favorability Index")
     st.progress(min(int(dfi), 100))
 
-    # Prediction
     prob = model.predict_proba([[temp, humidity, rainfall]])[0][1]
 
     st.markdown("### ⚠ Disease Risk Score")
