@@ -19,18 +19,18 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 # -------------------------------
-# LOGIN / REGISTER UI
+# LOGIN / REGISTER SCREEN
 # -------------------------------
-menu = ["Login", "Register"]
-choice = st.sidebar.selectbox("🔐 Account", menu)
-
 if not st.session_state.logged_in:
 
-    if choice == "Login":
-        st.title("🔐 Login")
+    st.title("🌾 PragyanAI Login Portal")
 
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+    tab1, tab2 = st.tabs(["🔐 Login", "📝 Register"])
+
+    # -------- LOGIN TAB --------
+    with tab1:
+        username = st.text_input("Username", key="login_user")
+        password = st.text_input("Password", type="password", key="login_pass")
 
         if st.button("Login"):
             success, msg = login(username, password)
@@ -42,25 +42,25 @@ if not st.session_state.logged_in:
             else:
                 st.error(msg)
 
-    elif choice == "Register":
-        st.title("📝 Register")
-
-        new_user = st.text_input("Username")
-        new_pass = st.text_input("Password", type="password")
+    # -------- REGISTER TAB --------
+    with tab2:
+        new_user = st.text_input("Create Username", key="reg_user")
+        new_pass = st.text_input("Create Password", type="password", key="reg_pass")
 
         if st.button("Register"):
             success, msg = register(new_user, new_pass)
 
             if success:
-                st.success(msg)
+                st.success("✅ Registration successful! Go to Login tab.")
             else:
                 st.error(msg)
 
     st.stop()
 
 # -------------------------------
-# LOGOUT
+# LOGOUT BUTTON
 # -------------------------------
+st.sidebar.title("🔐 Account")
 if st.sidebar.button("🚪 Logout"):
     st.session_state.logged_in = False
     st.rerun()
@@ -76,7 +76,7 @@ st.markdown("## 🌾 PragyanAI Crop Intelligence Dashboard")
 model = load_model()
 
 # -------------------------------
-# SIDEBAR
+# SIDEBAR CONTROLS
 # -------------------------------
 st.sidebar.title("📊 Control Panel")
 city = st.sidebar.text_input("📍 Location", "Delhi")
@@ -100,11 +100,13 @@ if st.sidebar.button("🚀 Analyze Risk"):
     col2.metric("💧 Humidity", f"{humidity}%")
     col3.metric("🌧 Rainfall", f"{rainfall} mm")
 
+    # Disease Favorability Index
     dfi = (humidity * 0.5) + (rainfall * 0.3) + (temp * 0.2)
 
     st.markdown("### 🧠 Disease Favorability Index")
     st.progress(min(int(dfi), 100))
 
+    # Prediction
     prob = model.predict_proba([[temp, humidity, rainfall]])[0][1]
 
     st.markdown("### ⚠ Disease Risk Score")
@@ -116,7 +118,7 @@ if st.sidebar.button("🚀 Analyze Risk"):
         st.warning("🟡 Medium Risk")
     else:
         st.error("🔴 High Risk")
-        st.info("💊 Apply preventive spray")
+        st.info("💊 Apply preventive spray in 2–3 days")
 
 # -------------------------------
 # IMAGE SECTION
@@ -147,5 +149,8 @@ c1, c2 = st.columns(2)
 c1.line_chart(data[["temperature", "humidity", "rainfall"]])
 c2.bar_chart(data["disease"].value_counts())
 
+# -------------------------------
+# FOOTER
+# -------------------------------
 st.markdown("---")
 st.markdown("🚀 AI predicts crop disease before it happens")
