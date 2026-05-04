@@ -1,28 +1,45 @@
 import requests
 
-# 🔑 REPLACE THIS with your real API key
+# 🔑 Apna API key yahan paste karo
 API_KEY = "9f244592efe26bbd55cf0f9ddaeb63d6"
 
+st.title("🌦️ Live City Weather App")
+
+# Input
+city = st.text_input("Enter City Name")
+
+# Function to get weather
 def get_weather(city):
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+    
+    response = requests.get(url)
+    data = response.json()
 
-    try:
-        response = requests.get(url)
-        data = response.json()
+    # Error Handling
+    if data["cod"] != 200:
+        return None
 
-        # ❌ Handle API errors properly
-        if response.status_code != 200:
-            raise Exception(data.get("message", "API error"))
+    weather = {
+        "temp": data["main"]["temp"],
+        "humidity": data["main"]["humidity"],
+        "condition": data["weather"][0]["description"],
+        "wind": data["wind"]["speed"]
+    }
 
-        # ✅ Extract values safely
-        temp = data["main"]["temp"]
-        humidity = data["main"]["humidity"]
+    return weather
 
-        rainfall = 0
-        if "rain" in data:
-            rainfall = data["rain"].get("1h", 0)
+# Button
+if st.button("Get Weather"):
+    if city:
+        result = get_weather(city)
 
-        return temp, humidity, rainfall
-
-    except Exception as e:
-        raise Exception(f"Weather fetch failed: {str(e)}")
+        if result:
+            st.success(f"Weather in {city.title()}")
+            st.write(f"🌡️ Temperature: {result['temp']} °C")
+            st.write(f"💧 Humidity: {result['humidity']}%")
+            st.write(f"☁️ Condition: {result['condition']}")
+            st.write(f"🌬️ Wind Speed: {result['wind']} m/s")
+        else:
+            st.error("City not found or API issue")
+    else:
+        st.warning("Please enter a city name")
