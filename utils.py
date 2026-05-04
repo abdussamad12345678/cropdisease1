@@ -1,18 +1,28 @@
 import requests
 
-API_KEY = "4979576b7d44fdb2c1ab50cae8f7b05f"
+# 🔑 REPLACE THIS with your real API key
+API_KEY = "9f244592efe26bbd55cf0f9ddaeb63d6"
 
 def get_weather(city):
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
 
-    res = requests.get(url)
-    data = res.json()
+    try:
+        response = requests.get(url)
+        data = response.json()
 
-    if "main" not in data:
-        raise Exception(data.get("message", "Weather API Error"))
+        # ❌ Handle API errors properly
+        if response.status_code != 200:
+            raise Exception(data.get("message", "API error"))
 
-    temp = data["main"]["temp"]
-    humidity = data["main"]["humidity"]
-    rainfall = data.get("rain", {}).get("1h", 0)
+        # ✅ Extract values safely
+        temp = data["main"]["temp"]
+        humidity = data["main"]["humidity"]
 
-    return temp, humidity, rainfall
+        rainfall = 0
+        if "rain" in data:
+            rainfall = data["rain"].get("1h", 0)
+
+        return temp, humidity, rainfall
+
+    except Exception as e:
+        raise Exception(f"Weather fetch failed: {str(e)}")
